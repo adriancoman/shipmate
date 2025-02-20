@@ -7,7 +7,7 @@ async function sendReminderForRelease(release, versionName) {
     console.log(`Getting issues for the release: ${release.name}`)
     const issueList = await getIssueInRelease(release.id)
     const issueMessage = issueList.join('\n')
-    console.log("Sending a Slack message")
+    console.log(`Sending a Slack message for ${versionName}`)
     if (issueList.length > 0) {
         await sendMessageToChannel(versionName, `The following ${issueList.length} issues are not resolved for the ${release.name} release:\n${issueMessage}`)
     } else {
@@ -72,6 +72,7 @@ async function sendMessageToChannel(releaseName, message) {
             headers: SLACK_HEADERS,
         }
     );
+    console.log(response.data)
 }
 
 module.exports = { setSlackHeaders, createSlackChannel, addUsersToChannel, sendReminderForRelease, setChannelTheme, sendMessageToChannel };
