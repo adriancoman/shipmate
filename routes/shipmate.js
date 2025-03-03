@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const fs = require('fs');
 
 const {
     setSlackHeaders,
@@ -13,8 +14,10 @@ const {
 const {setJiraHeaders, getPendingReleases, getIssueInRelease} = require('../services/jiraService');
 const {getReleaseName} = require('../utils/helpers');
 
-// Adi, Oana, Bogdan, Cristi, AdiP, Alina, Bobby, Cosmin, Gabi, Iulian, Adriana, Denisa, Irina, Alex, Diana, Razvan, AdiA
-const userList = 'U6L0U3KQD, U6MKY6FV3, U03DGS0LCTY, U8A8NP4RM, U03N5CPQDNW, U05RHBS68JC, U03P2B5HXPW, U041XQY19UK, UQZ8LTE0G, U03B4MRFJ5R, U04LEM0ML2W, UP3BV04HJ, U04H8C72QUU, U3CT0797T, UAJ04USK1, U073RF2B5TR, U511R2YBB'
+const config = JSON.parse(fs.readFileSync('config.json', 'utf8'));
+const userList = config.userList;
+const userIds = userList.map(user => user.id);
+
 // const userList = 'U6L0U3KQD'
 let SLACK_HEADERS = ""
 let JIRA_HEADERS = "";
@@ -25,7 +28,7 @@ async function createChannel(versionName, releaseDate) {
     console.log(`Attempting to create channel with name ${channelName}`)
     const channelId = await createSlackChannel(channelName);
 
-    await addUsersToChannel(channelId, userList);
+    await addUsersToChannel(channelId, userIds);
     await setChannelTheme(channelId, channelName, releaseDate);
 }
 
@@ -72,7 +75,7 @@ async function sendTaskReminders(versionName) {
     console.log("All done")
 }
 
-router.get('/reminder', async (req, res) => {
+router.post('/reminder', async (req, res) => {
     try {
 
         SLACK_HEADERS = {
@@ -98,7 +101,7 @@ router.get('/reminder', async (req, res) => {
     }
 })
 
-router.get('/launch', async (req, res) => {
+router.post('/launch', async (req, res) => {
     await commenceReleaseChecks()
 
     res.status(200).send({message: 'Done'});
@@ -135,20 +138,20 @@ async function commenceReleaseChecks() {
     const differenceInTime = releaseDate - today;
     const differenceInDays = Math.floor(differenceInTime / (1000 * 60 * 60 * 24))
 
-    if (differenceInDays === 9) { // (maybe) monday prev week
-        await createChannel(nextRelease.name, releaseDate);
-    }
+    // if (differenceInDays === 9) { // (maybe) monday prev week
+    //     await createChannel(nextRelease.name, releaseDate);
+    // }
 
-    if (differenceInDays === 2) { // (maybe) tuesday same week
-        await sendTaskReminders(nextRelease.name);
-        await sendMessageToChannel(nextRelease.name, `When the code freeze is done, add your builds bellow. Create a separate thread for every issue you may find during testing.`)
-
-    }
-
-    if (differenceInDays === 0) { // release day omg
-        await sendTaskReminders(nextRelease.name);
-        await sendMessageToChannel(nextRelease.name, `Code freeze period is over. If testing is complete, please review that all issues found during the code freeze period are included in the release and let's launch. Awaiting QA and PM approvals.`)
-    }
+    // if (differenceInDays === 2) { // (maybe) tuesday same week
+    //     await sendTaskReminders(nextRelease.name);
+    //     await sendMessageToChannel(nextRelease.name, `When the code freeze is done, add your builds bellow. Create a separate thread for every issue you may find during testing.`)
+    //
+    // }
+    //
+    // if (differenceInDays === 0) { // release day omg
+    //     await sendTaskReminders(nextRelease.name);
+    //     await sendMessageToChannel(nextRelease.name, `Code freeze period is over. If testing is complete, please review that all issues found during the code freeze period are included in the release and let's launch. Awaiting QA and PM approvals.`)
+    // }
 }
 
 module.exports = {
